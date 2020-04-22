@@ -46,57 +46,58 @@ public class Report {
   @GetMapping("/reportPDF/{templateType}")
   public ResponseEntity<InputStreamResource> reportPDF(@PathVariable("templateType") String templateType, @RequestParam String pdfType, @RequestParam String limit) {
 
-		String data = getDataForReportTemplate(templateType, limit);
-		InputStreamResource resource = jsReport(data, pdfType);
-		HttpHeaders responseHeaders = getResponseHeaders();
-		responseHeaders.add("Content-Disposition", "filename=report.pdf");
-		responseHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+	String data = getDataForReportTemplate(templateType, limit);
+	InputStreamResource resource = jsReport(data, pdfType);
+	HttpHeaders responseHeaders = getResponseHeaders();
+	responseHeaders.add("Content-Disposition", "filename=report.pdf");
+	responseHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 
-    ResponseEntity<InputStreamResource> responsepdf  = ResponseEntity.ok().headers(responseHeaders).body(resource);
+   	ResponseEntity<InputStreamResource> responsepdf  = ResponseEntity.ok().headers(responseHeaders).body(resource);
 		return responsepdf;
 
 	}
-  /**
-   * Renders reports in HTML format
-   * @param templateType: templateType can be SEIM report's log summary or log detail template types.
-   * @param limit: number of records to fetch from database
-   * @return returns pdf file
-   */
-	@GetMapping("/reportHTML/{templateType}")
-	public ResponseEntity<InputStreamResource> reportHTML(@PathVariable("templateType") String templateType, @RequestParam String limit) {
+/**
+* Renders reports in HTML format
+* @param templateType: templateType can be SEIM report's log summary or log detail template types.
+* @param limit: number of records to fetch from database
+* @return returns pdf file
+*/
+@GetMapping("/reportHTML/{templateType}")
+public ResponseEntity<InputStreamResource> reportHTML(@PathVariable("templateType") String templateType, @RequestParam String limit) {
 
-		String data = getDataForReportTemplate(templateType, limit);
-		InputStreamResource resource = jsReport(data, "html");
+	String data = getDataForReportTemplate(templateType, limit);
+	InputStreamResource resource = jsReport(data, "html");
 
-		HttpHeaders responseHeaders = getResponseHeaders();
-		responseHeaders.add("Content-Disposition", "filename=report.html");
-		responseHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+	HttpHeaders responseHeaders = getResponseHeaders();
+	responseHeaders.add("Content-Disposition", "filename=report.html");
+	responseHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 
-		ResponseEntity<InputStreamResource> responseHTML = new ResponseEntity<InputStreamResource>(
-				resource,responseHeaders , HttpStatus.OK);
+	ResponseEntity<InputStreamResource> responseHTML = new ResponseEntity<InputStreamResource>(
+			resource,responseHeaders , HttpStatus.OK);
 
-		return responseHTML;
-
-	}
-
-	@GetMapping("/reportList")
-	public ResponseEntity<String> reportsList()
-	{
-		String jsonReportList = template.getForObject("http://10.3.0.105:8080/report", String.class);
-		return ResponseEntity.ok().headers(getResponseHeaders()).body(jsonReportList);
+	return responseHTML;
 
 	}
 
+@GetMapping("/reportList")
+public ResponseEntity<String> reportsList()
+{
+	String jsonReportList = template.getForObject("http://10.3.0.105:8080/report", String.class);
+	return ResponseEntity.ok().headers(getResponseHeaders()).body(jsonReportList);
+
+}
+
   /**
+   * Gets HTML template from database.
    * JSreport API takes template in HTML format as part of its post request. For testing purposes an existing template from SIEM lR is
-   * stored as HTML in database. Gets HTML template from database.
-   * "Rendering LR report templates with JSReports" confluence page refers to the LR template "TestReporting-SIEMLR-LogSummaryTemplate.pdf" used for this POC.
+   * stored as HTML in database. 
+   * "Rendering LR report templates with JSReports" confluence page refers to this LR template "TestReporting-SIEMLR-  LogSummaryTemplate.pdf" used for this POC.
    * @return Returns HTML template
    */
   private String getContentforTemplate() {
-		String content = template.getForObject("http://10.3.0.105:8080/report/template/1", String.class);
-		Template template = gson.fromJson(content, Template.class);
-		return template.getContent();
+	String content = template.getForObject("http://10.3.0.105:8080/report/template/1", String.class);
+	Template template = gson.fromJson(content, Template.class);
+	return template.getContent();
 	}
 
   /**
@@ -105,24 +106,24 @@ public class Report {
    * @param reportRecipe The type of rendering recipe to be used by the jsreports
    * @return rendered report
    */
-		private InputStreamResource jsReport(String data, String reportRecipe)
-		{
-			String content = getContentforTemplate();
+private InputStreamResource jsReport(String data, String reportRecipe)
+{
+	String content = getContentforTemplate();
 
-			String jsonString = "{\"template\": {" +
-					"\"content\" :\"" + content +"\","+
-					"\"recipe\": \"" + reportRecipe +"\","+
-					"\"engine\": \"handlebars\""+
-					"},"+
-					"\"data\" : " + data +
-					"}";
-			//Request to jsReport engine is made to render reports
-			HttpEntity<Object> entity = new HttpEntity<>(jsonString, getHeaders());
-			byte[] response = template.postForObject("http://localhost:5488/api/report", entity, byte[].class);
-			InputStream targetStream = new ByteArrayInputStream(response);
-			InputStreamResource resource = new InputStreamResource(targetStream);
-			return resource;
-			}
+	String jsonString = "{\"template\": {" +
+			"\"content\" :\"" + content +"\","+
+			"\"recipe\": \"" + reportRecipe +"\","+
+			"\"engine\": \"handlebars\""+
+			"},"+
+			"\"data\" : " + data +
+			"}";
+	//Request to jsReport engine is made to render reports
+	HttpEntity<Object> entity = new HttpEntity<>(jsonString, getHeaders());
+	byte[] response = template.postForObject("http://localhost:5488/api/report", entity, byte[].class);
+	InputStream targetStream = new ByteArrayInputStream(response);
+	InputStreamResource resource = new InputStreamResource(targetStream);
+	return resource;
+}
 
   /**
    * Data is fetched depending on the template type and limit. To fetch data, request is made to
@@ -139,37 +140,36 @@ public class Report {
     if ("LS".equals(templateType)) {
       jsonData =
           template.getForObject("http://10.3.0.105:8080/report/log-summary/data?limit="+limit, String.class);
-		}
+	}
     else
-		{
-			jsonData =
-					template.getForObject("http://10.3.0.105:8080/report/log-detail/data?limit="+limit, String.class);
+	{
+	jsonData = template.getForObject("http://10.3.0.105:8080/report/log-detail/data?limit="+limit, String.class);
 
-		}
+	}
 	jsonData = "{ \"name\": \"Reports\", \"messages\": " + jsonData + "}" ;
 		return jsonData;
-	}
+}
 	
 	
-	private HttpHeaders getHeaders() {
-	    if (null == headers) {
-	        headers = new HttpHeaders();
-	        headers.set("User-Agent", "request");
-	        headers.setContentType(MediaType.APPLICATION_JSON);
-	        headers.setAccept(Arrays.asList(MediaType.ALL));
-	    }
-	    return headers;
-	}
-	
-	private HttpHeaders getResponseHeaders()
-	{
-		HttpHeaders headers = new HttpHeaders();
-		  headers.add("Access-Control-Allow-Methods", "GET, POST");
-		  headers.add("Access-Control-Allow-Headers", "Content-Type");
-		  headers.add("Cache-Control", "no-cache, no-store");
-		  headers.add("Pragma", "no-cache");
-		  headers.add("Expires", "0");
-		return headers;
-	}
+private HttpHeaders getHeaders() {
+    if (null == headers) {
+	headers = new HttpHeaders();
+	headers.set("User-Agent", "request");
+	headers.setContentType(MediaType.APPLICATION_JSON);
+	headers.setAccept(Arrays.asList(MediaType.ALL));
+    }
+    return headers;
+}
+
+private HttpHeaders getResponseHeaders()
+{
+	HttpHeaders headers = new HttpHeaders();
+	  headers.add("Access-Control-Allow-Methods", "GET, POST");
+	  headers.add("Access-Control-Allow-Headers", "Content-Type");
+	  headers.add("Cache-Control", "no-cache, no-store");
+	  headers.add("Pragma", "no-cache");
+	  headers.add("Expires", "0");
+	return headers;
+}
 
 }
