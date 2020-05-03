@@ -5,11 +5,15 @@ public class Template {
 
 	private String content;
 	private String id;
+	private String script;
 
-	public Template(String content, String data)
+	public Template() {}
+
+	public Template(String content, String data, String script)
 	{
 		this.content = content;
 		this.id = data;
+		this.script = script;
 	}
 
 	public String getContent() {
@@ -24,4 +28,8 @@ public class Template {
 	public void setData(String data) {
 		this.id = data;
 	}
+	public String getScript() {
+		return script;
+	}
+
 }

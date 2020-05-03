@@ -74,10 +74,10 @@ public class ReportController {
 	 */
 	@GetMapping("/reportPDF/{templateType}")
 	public ResponseEntity<InputStreamResource> reportPDF(@PathVariable("templateType") String templateType,
-			@RequestParam String pdfType, @RequestParam String limit) {
+			@RequestParam String pdfType, @RequestParam String limit, @RequestParam int templateId) {
 
 		String data = getDataForReportTemplate(templateType, limit);
-		InputStreamResource resource = jsReport(data, pdfType);
+		InputStreamResource resource = jsReport(data, pdfType, templateId);
 		HttpHeaders responseHeaders = getResponseHeaders();
 		responseHeaders.add("Content-Disposition", "filename=report.pdf");
 		responseHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
@@ -97,10 +97,10 @@ public class ReportController {
 	 */
 	@GetMapping("/reportHTML/{templateType}")
 	public ResponseEntity<InputStreamResource> reportHTML(@PathVariable("templateType") String templateType,
-			@RequestParam String limit) {
+			@RequestParam String limit, @RequestParam int templateId) {
 
 		String data = getDataForReportTemplate(templateType, limit);
-		InputStreamResource resource = jsReport(data, "html");
+		InputStreamResource resource = jsReport(data, "html", templateId);
 
 		HttpHeaders responseHeaders = getResponseHeaders();
 		responseHeaders.add("Content-Disposition", "filename=report.html");
@@ -129,10 +129,9 @@ public class ReportController {
 	 * 
 	 * @return Returns HTML template
 	 */
-	private String getContentforTemplate() {
-		String content = template.getForObject("http://localhost:" + serverPort + "/report/template/1", String.class);
-		Template template = gson.fromJson(content, Template.class);
-		return template.getContent();
+	private Template getTemplate(int templateId) {
+		Template content = template.getForObject("http://localhost:" + serverPort + "/report/template/" + templateId, Template.class);
+		return content;
 	}
 
 	/**
@@ -142,10 +141,12 @@ public class ReportController {
 	 * @param reportRecipe The type of rendering recipe to be used by the jsreports
 	 * @return rendered report
 	 */
-	private InputStreamResource jsReport(String data, String reportRecipe) {
-		String content = getContentforTemplate();
-
-		String jsonString = "{\"template\": {" + "\"content\" :\"" + content + "\"," + "\"recipe\": \"" + reportRecipe
+	private InputStreamResource jsReport(String data, String reportRecipe, int templateId) {
+		Template content = getTemplate(templateId);
+		String scriptTag = content
+				.getScript() != null && !content
+				.getScript().equals("") ? "\"scripts\": [{ \"content\": " + content.getScript() + "}],": "";
+		String jsonString = "{\"template\": {" + scriptTag + "\"content\" :\"" + content.getContent() + "\"," + "\"recipe\": \"" + reportRecipe
 				+ "\"," + "\"engine\": \"handlebars\"" + "}," + "\"data\" : " + data + "}";
 		// Request to jsReport engine is made to render reports
 		HttpEntity<Object> entity = new HttpEntity<>(jsonString, getHeaders());
@@ -210,12 +211,14 @@ public class ReportController {
 		logger.info("Executing getLogData() with limit set to {}", limit);
 		if (limit > 0) {
 			Pageable PageWithNElements = PageRequest.of(0, limit);
+			logger.info("Summary detail request completed");
 			return logDetailRepository.findAll(PageWithNElements).getContent();
 
 		} else {
 			Iterable<LogDetail> myObjects = logDetailRepository.findAll();
 			List<LogDetail> target = new ArrayList<>();
 			myObjects.forEach(target::add);
+			logger.info("Summary detail request completed");
 			return target;
 		}
 	}
@@ -231,12 +234,14 @@ public class ReportController {
 		logger.info("Executing getLogSummary() with limit set to {}", limit);
 		if (limit > 0) {
 			Pageable PageWithNElements = PageRequest.of(0, limit);
+			logger.info("Summary data request completed");
 			return logSummaryRepository.findAll(PageWithNElements).getContent();
 
 		} else {
 			Iterable<LogSummary> myObjects = logSummaryRepository.findAll();
 			List<LogSummary> target = new ArrayList<>();
 			myObjects.forEach(target::add);
+			logger.info("Summary data request completed");
 			return target;
 		}
 	}
@@ -262,6 +267,7 @@ public class ReportController {
 	public ReportTemplate getReportTemplateById(@PathVariable("id") Long id) {
 		logger.info("Executing getReportTemplateById() for template id = {}" , id );
 		Optional<ReportTemplate> entity = reportTemplateRepository.findById(id);
+		logger.info("Template request completed");
 		return entity.get();
 	}
 }

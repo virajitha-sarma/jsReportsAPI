@@ -21,17 +21,21 @@ public class ReportTemplate {
 	public String recipe;
 	public String engine;
 	public String name;
+
+	@Column(columnDefinition = "TEXT")
+	public String script;
 	
 	public ReportTemplate() {
 		
 	}
 			
-	public ReportTemplate(Long id, String content, String recipe, String engine, String name) {
+	public ReportTemplate(Long id, String content, String recipe, String engine, String name, String script) {
 		super();
 		this.id = id;
 		this.content = content;
 		this.recipe = recipe;
 		this.engine = engine;
 		this.name = name;
+		this.script = script;
 	}
 }
