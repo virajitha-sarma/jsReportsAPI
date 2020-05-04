@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +23,11 @@ import com.example.demo.model.Data;
 import com.example.demo.model.JSReportPayload;
 import com.example.demo.model.LogDetail;
 import com.example.demo.model.LogSummaryResult;
+import com.example.demo.model.ReportTemplate;
 import com.example.demo.model.Template;
 import com.example.demo.repository.LogDetailRepository;
 import com.example.demo.repository.LogSummaryRepository;
+import com.example.demo.repository.ReportTemplateRepository;
 import com.example.demo.service.ReportService;
 
 @Service
@@ -36,6 +39,9 @@ public class ReportServiceImpl implements ReportService {
 
 	@Autowired
 	LogDetailRepository logDetailRepository;
+	
+	@Autowired
+	ReportTemplateRepository reportTemplateRepository;
 	
 	@Autowired
 	RestTemplate restTemplate;
@@ -73,12 +79,12 @@ public class ReportServiceImpl implements ReportService {
 	@Override
 	public InputStreamResource generateJsReport(String pdfType, List<?> data, int templateId) {
 
-		Template dbTemplate = getTemplate(templateId);
+		ReportTemplate dbTemplate = getTemplate(templateId);
 		JSReportPayload payload = new JSReportPayload();
 		Template template = new Template();
 		template.setEngine("handlebars");
 		template.setRecipe(pdfType);
-		template.setContent(dbTemplate.getContent());
+		template.setContent(dbTemplate.content);
 
 		payload.setTemplate(template);
 		Data payloadData = new Data();
@@ -104,8 +110,11 @@ public class ReportServiceImpl implements ReportService {
 		return headers;
 	}
 
-	private Template getTemplate(int templateId) {
-		Template content = restTemplate.getForObject("http://localhost:" + serverPort + "/report/template/" + templateId, Template.class);
-		return content;
+	@Override
+	public ReportTemplate getTemplate(long templateId) {
+		logger.info("Executing getReportTemplateById() for template id = {}" , templateId );
+		Optional<ReportTemplate> entity = reportTemplateRepository.findById(templateId);
+		logger.info("Template request completed");
+		return entity.get();
 	}
 }

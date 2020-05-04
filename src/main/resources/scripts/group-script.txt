@@ -1,0 +1,19 @@
+function groupBy(objectArray, property) {  
+     return objectArray.reduce(function (acc, obj) {
+           var key = obj[property]; 
+           if (!acc[key]) { 
+                 acc[key] = [];
+           } 
+           acc[key].push(obj); 
+           return acc;
+     }, {});
+ } 
+function beforeRender(req, res) { 
+     var data = groupBy(req.data.messages, 'dataoHost'); 
+     var finalData = []; 
+     for (let key in data) { 
+        let row = {'host': key, 'logcount': data[key].length}; 
+        finalData.push(row); 
+     } 
+     req.data.messages = finalData;
+ }

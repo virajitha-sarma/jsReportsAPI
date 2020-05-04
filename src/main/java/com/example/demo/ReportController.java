@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,20 +125,6 @@ public class ReportController {
 	}
 
 	/**
-	 * JSreport API takes template in HTML format as part of its post request. For
-	 * testing purposes an existing template from SIEM lR is stored as HTML in
-	 * database. Gets HTML template from database. "Rendering LR report templates
-	 * with JSReports" confluence page refers to the LR template
-	 * "TestReporting-SIEMLR-LogSummaryTemplate.pdf" used for this POC.
-	 * 
-	 * @return Returns HTML template
-	 */
-	private Template getTemplate(int templateId) {
-		Template content = template.getForObject("http://localhost:" + serverPort + "/report/template/" + templateId, Template.class);
-		return content;
-	}
-
-	/**
 	 * Renders report for a particular template and data
 	 * 
 	 * @param data         Data that fills the report template
@@ -147,11 +132,11 @@ public class ReportController {
 	 * @return rendered report
 	 */
 	private InputStreamResource jsReport(String data, String reportRecipe, int templateId) {
-		Template content = getTemplate(templateId);
+		ReportTemplate content = reportService.getTemplate(templateId);
 		String scriptTag = content
-				.getScript() != null && !content
-				.getScript().equals("") ? "\"scripts\": [{ \"content\": " + content.getScript() + "}],": "";
-		String jsonString = "{\"template\": {" + scriptTag + "\"content\" :\"" + content.getContent() + "\"," + "\"recipe\": \"" + reportRecipe
+				.script != null && !content
+				.script.equals("") ? "\"scripts\": [{ \"content\": " + content.script + "}],": "";
+		String jsonString = "{\"template\": {" + scriptTag + "\"content\" :\"" + content.content + "\"," + "\"recipe\": \"" + reportRecipe
 				+ "\"," + "\"engine\": \"handlebars\"" + "}," + "\"data\" : " + data + "}";
 		// Request to jsReport engine is made to render reports
 		HttpEntity<Object> entity = new HttpEntity<>(jsonString, getHeaders());
@@ -270,10 +255,7 @@ public class ReportController {
 	 */
 	@GetMapping("/report/template/{id}")
 	public ReportTemplate getReportTemplateById(@PathVariable("id") Long id) {
-		logger.info("Executing getReportTemplateById() for template id = {}" , id );
-		Optional<ReportTemplate> entity = reportTemplateRepository.findById(id);
-		logger.info("Template request completed");
-		return entity.get();
+		return reportService.getTemplate(id);
 	}
 
 	/**
