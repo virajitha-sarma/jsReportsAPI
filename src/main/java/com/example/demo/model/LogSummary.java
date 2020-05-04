@@ -43,6 +43,9 @@ public class LogSummary{
 	
 	@Column(name="dataoip")
 	public String dataoIP;
+
+	@Column(name="logcount")
+	public String logCount;
 	
 	public LogSummary() {
 		

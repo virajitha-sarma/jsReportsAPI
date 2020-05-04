@@ -27,12 +27,14 @@ import org.springframework.web.client.RestTemplate;
 
 import com.example.demo.model.LogDetail;
 import com.example.demo.model.LogSummary;
+import com.example.demo.model.LogSummaryResult;
 import com.example.demo.model.Report;
 import com.example.demo.model.ReportTemplate;
 import com.example.demo.repository.LogDetailRepository;
 import com.example.demo.repository.LogSummaryRepository;
 import com.example.demo.repository.ReportRepository;
 import com.example.demo.repository.ReportTemplateRepository;
+import com.example.demo.service.ReportService;
 import com.google.gson.Gson;
 
 @RestController
@@ -52,6 +54,9 @@ public class ReportController {
 
 	@Autowired
 	ReportTemplateRepository reportTemplateRepository;
+
+	@Autowired
+	ReportService reportService;
 
 	@Autowired
 	Gson gson;
@@ -269,5 +274,28 @@ public class ReportController {
 		Optional<ReportTemplate> entity = reportTemplateRepository.findById(id);
 		logger.info("Template request completed");
 		return entity.get();
+	}
+
+	/**
+	 * Renders reports
+	 *
+	 * @param templateType: templateType can be SIEM report's log summary or log
+	 *                      detail template types.
+	 * @param pdfType:      Type of JSReport engine to be used for rendering reports
+	 * @param limit:        number of records to fetch from database
+	 * @return returns file
+	 */
+	@GetMapping("/report/{templateType}")
+	public ResponseEntity<InputStreamResource> report(@PathVariable("templateType") String templateType,
+			@RequestParam String pdfType, @RequestParam int limit, @RequestParam int templateId, @RequestParam(required = false) String groupBy) {
+
+		List<LogSummaryResult> logSummary = reportService.getLogSummary("", limit);
+		InputStreamResource resource = reportService.generateJsReport(pdfType, logSummary, templateId);
+		HttpHeaders responseHeaders = getResponseHeaders();
+		responseHeaders.add("Content-Disposition", "filename=report.pdf");
+		responseHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+		ResponseEntity<InputStreamResource> responsepdf = ResponseEntity.ok().headers(responseHeaders).body(resource);
+		return responsepdf;
+
 	}
 }
